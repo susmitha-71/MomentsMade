@@ -41,7 +41,7 @@ function Create() {
     setError("");
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
@@ -64,7 +64,6 @@ function Create() {
     }
 
     const experience = {
-      id: Date.now(),
       title: title.trim(),
       category,
       description: description.trim(),
@@ -73,18 +72,20 @@ function Create() {
     };
 
     try {
-      const savedExperiences = JSON.parse(
-        localStorage.getItem("moments") || "[]"
+      const response = await fetch(
+        "http://localhost:5000/api/experiences",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(experience)
+        }
       );
 
-      if (!Array.isArray(savedExperiences)) {
-        throw new Error("Invalid saved data");
+      if (!response.ok) {
+        throw new Error("Could not save experience");
       }
-
-      localStorage.setItem(
-        "moments",
-        JSON.stringify([...savedExperiences, experience])
-      );
 
       alert("Your experience has been published!");
 
@@ -94,7 +95,7 @@ function Create() {
       setImage("");
       setImageUrl("");
     } catch {
-      setError("Could not save your experience. Please try again.");
+      setError("Could not save your experience. Please check your backend connection.");
     }
   }
 

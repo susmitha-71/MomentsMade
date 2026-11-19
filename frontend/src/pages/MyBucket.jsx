@@ -1,15 +1,58 @@
 
+import { useEffect, useState } from "react";
+
 function MyBucket() {
-  const experiences =
-    JSON.parse(localStorage.getItem("moments")) || [];
+  const [experiences, setExperiences] = useState([]);
 
-  function deleteExperience(id) {
-    const updated = experiences.filter(
-      (item) => item.id !== id
-    );
+  useEffect(() => {
+    async function loadExperiences() {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/experiences"
+        );
 
-    localStorage.setItem("moments", JSON.stringify(updated));
-    window.location.reload();
+        if (!response.ok) {
+          throw new Error("Could not load experiences");
+        }
+
+        const data = await response.json();
+
+        setExperiences(
+          data.map(item => ({
+            ...item,
+            id: item._id
+          }))
+        );
+      } catch (error) {
+        console.error("Loading error:", error);
+      }
+    }
+
+    loadExperiences();
+  }, []);
+
+  async function deleteExperience(id) {
+    if (!window.confirm("Delete this experience?")) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/experiences/${id}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Could not delete experience");
+      }
+
+      setExperiences(previous =>
+        previous.filter(item => item.id !== id)
+      );
+    } catch (error) {
+      alert("Could not delete experience. Please try again.");
+      console.error(error);
+    }
   }
 
   return (
@@ -38,7 +81,7 @@ function MyBucket() {
         </div>
       ) : (
         <div className="experience-grid">
-          {experiences.map((item) => (
+          {experiences.map(item => (
             <div className="experience-card" key={item.id}>
               {item.image && (
                 <img src={item.image} alt={item.title} />

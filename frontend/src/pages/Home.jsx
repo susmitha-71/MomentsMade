@@ -6,12 +6,30 @@ function Home() {
   const [experiences, setExperiences] = useState([]);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("moments") || "[]");
-    setExperiences(Array.isArray(saved) ? saved : []);
+    async function loadExperiences() {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/experiences"
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load experiences");
+        }
+
+        const data = await response.json();
+        setExperiences(data);
+      } catch (error) {
+        console.error("Loading error:", error);
+      }
+    }
+
+    loadExperiences();
   }, []);
 
   const recentExperiences = [...experiences]
-    .sort((a, b) => b.id - a.id)
+    .sort((a, b) =>
+      new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    )
     .slice(0, 3);
 
   return (
@@ -102,7 +120,7 @@ function Home() {
         {recentExperiences.length > 0 ? (
           <div className="recent-grid">
             {recentExperiences.map((item) => (
-              <article className="recent-card" key={item.id}>
+              <article className="recent-card" key={item._id}>
                 {item.image && (
                   <img src={item.image} alt={item.title} />
                 )}
@@ -111,8 +129,8 @@ function Home() {
                   <span>{item.category}</span>
                   <h3>{item.title}</h3>
                   <p>
-                    {item.description.length > 100
-                      ? item.description.slice(0, 100) + "..."
+                    {String(item.description || "").length > 100
+                      ? String(item.description).slice(0, 100) + "..."
                       : item.description}
                   </p>
                 </div>

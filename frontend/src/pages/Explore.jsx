@@ -19,12 +19,39 @@ function Explore() {
   ];
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("moments") || "[]");
-      const savedLikes = JSON.parse(localStorage.getItem("momentLikes") || "{}");
-      const savedComments = JSON.parse(localStorage.getItem("momentComments") || "{}");
+    async function loadExperiences() {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/experiences"
+        );
 
-      setExperiences(Array.isArray(saved) ? saved : []);
+        if (!response.ok) {
+          throw new Error("Could not load experiences");
+        }
+
+        const data = await response.json();
+
+        const formattedExperiences = data.map(item => ({
+          ...item,
+          id: item._id
+        }));
+
+        setExperiences(formattedExperiences);
+      } catch (error) {
+        console.error("Loading experiences error:", error);
+      }
+    }
+
+    loadExperiences();
+
+    try {
+      const savedLikes = JSON.parse(
+        localStorage.getItem("momentLikes") || "{}"
+      );
+
+      const savedComments = JSON.parse(
+        localStorage.getItem("momentComments") || "{}"
+      );
 
       setLiked(
         savedLikes && typeof savedLikes === "object" && !Array.isArray(savedLikes)
@@ -40,18 +67,23 @@ function Explore() {
 
           safeComments[id] = list.map(comment => {
             if (typeof comment === "string") return comment;
+
             if (comment && typeof comment === "object") {
               return String(
                 comment.text || comment.comment || comment.message || ""
               );
             }
+
             return String(comment ?? "");
           }).filter(Boolean);
         });
       }
 
       setComments(safeComments);
-      localStorage.setItem("momentComments", JSON.stringify(safeComments));
+      localStorage.setItem(
+        "momentComments",
+        JSON.stringify(safeComments)
+      );
     } catch (error) {
       console.error("Loading error:", error);
     }
@@ -78,23 +110,49 @@ function Explore() {
     }));
   }
 
-  function deleteExperience(id) {
+  async function deleteExperience(id) {
     if (!window.confirm("Delete this experience?")) return;
 
-    const updatedExperiences = experiences.filter(item => item.id !== id);
-    const updatedLikes = { ...liked };
-    const updatedComments = { ...comments };
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/experiences/${id}`,
+        {
+          method: "DELETE"
+        }
+      );
 
-    delete updatedLikes[id];
-    delete updatedComments[id];
+      if (!response.ok) {
+        throw new Error("Could not delete experience");
+      }
 
-    setExperiences(updatedExperiences);
-    setLiked(updatedLikes);
-    setComments(updatedComments);
+      const updatedExperiences = experiences.filter(
+        item => item.id !== id
+      );
 
-    localStorage.setItem("moments", JSON.stringify(updatedExperiences));
-    localStorage.setItem("momentLikes", JSON.stringify(updatedLikes));
-    localStorage.setItem("momentComments", JSON.stringify(updatedComments));
+      const updatedLikes = { ...liked };
+      const updatedComments = { ...comments };
+
+      delete updatedLikes[id];
+      delete updatedComments[id];
+
+      setExperiences(updatedExperiences);
+      setLiked(updatedLikes);
+      setComments(updatedComments);
+
+      localStorage.setItem(
+        "momentLikes",
+        JSON.stringify(updatedLikes)
+      );
+
+      localStorage.setItem(
+        "momentComments",
+        JSON.stringify(updatedComments)
+      );
+
+    } catch (error) {
+      alert("Could not delete experience. Please try again.");
+      console.error(error);
+    }
   }
 
   function addComment(id) {
@@ -124,8 +182,8 @@ function Explore() {
     })
     .sort((a, b) =>
       sort === "latest"
-        ? Number(b.id) - Number(a.id)
-        : Number(a.id) - Number(b.id)
+        ? new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        : new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
     );
 
   return (
