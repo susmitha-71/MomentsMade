@@ -22,7 +22,7 @@ function Explore() {
     async function loadExperiences() {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/experiences"
+          "https://momentsmade.onrender.com/api/experiences"
         );
 
         if (!response.ok) {
@@ -110,49 +110,8 @@ function Explore() {
     }));
   }
 
-  async function deleteExperience(id) {
-    if (!window.confirm("Delete this experience?")) return;
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/experiences/${id}`,
-        {
-          method: "DELETE"
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Could not delete experience");
-      }
-
-      const updatedExperiences = experiences.filter(
-        item => item.id !== id
-      );
-
-      const updatedLikes = { ...liked };
-      const updatedComments = { ...comments };
-
-      delete updatedLikes[id];
-      delete updatedComments[id];
-
-      setExperiences(updatedExperiences);
-      setLiked(updatedLikes);
-      setComments(updatedComments);
-
-      localStorage.setItem(
-        "momentLikes",
-        JSON.stringify(updatedLikes)
-      );
-
-      localStorage.setItem(
-        "momentComments",
-        JSON.stringify(updatedComments)
-      );
-
-    } catch (error) {
-      alert("Could not delete experience. Please try again.");
-      console.error(error);
-    }
+  function deleteExperience() {
+    alert("Delete is temporarily disabled. Your experience has not been deleted.");
   }
 
   function addComment(id) {
@@ -301,7 +260,7 @@ function Explore() {
 
                     <button
                       className="delete-btn"
-                      onClick={() => deleteExperience(item.id)}
+                      onClick={deleteExperience}
                       title="Delete"
                     >
                       🗑️
